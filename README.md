@@ -2,11 +2,12 @@
 
 Initial setup for the customer-service ASP.NET Core Web API.
 
-This first task intentionally keeps the service small: the API exposes only `GET /health`, while Docker and environment files prepare the project for a future Postgres integration.
+The service currently exposes `GET /health` and includes a Clean Architecture foundation with a minimal Customer domain model and PostgreSQL persistence through EF Core + Npgsql.
 
 ## Requirements
 
 - .NET SDK 10.0 or later installed locally
+- EF Core CLI tool for migrations: `dotnet tool install --global dotnet-ef`
 - Docker Desktop for running the Compose stack
 
 ## Run Locally
@@ -47,6 +48,41 @@ Local URLs:
 - API: `http://localhost:5001/health`
 - Postgres: `localhost:5432`
 
+## Database Migrations
+
+Start Postgres before applying migrations:
+
+```bash
+docker compose up -d postgres
+```
+
+Create a new migration from the repository root:
+
+```bash
+dotnet ef migrations add <MigrationName> \
+  --project src/CustomerService.Infrastructure \
+  --startup-project src/CustomerService.Api \
+  --context CustomerDbContext \
+  --output-dir Persistence/Migrations
+```
+
+Apply migrations locally:
+
+```bash
+dotnet ef database update \
+  --project src/CustomerService.Infrastructure \
+  --startup-project src/CustomerService.Api \
+  --context CustomerDbContext
+```
+
+The initial migration creates the `customers` table with `id`, `name`, `email`, `address`, and `profile_picture_url`.
+
+## Tests
+
+```bash
+dotnet test
+```
+
 ## Configuration
 
 The API is prepared to receive the future Postgres connection string through:
@@ -55,7 +91,7 @@ The API is prepared to receive the future Postgres connection string through:
 ConnectionStrings__Postgres
 ```
 
-No database connection is opened during startup yet. Persistence will be added in a later task.
+The development connection string points at the local Docker Compose Postgres service.
 
 ## Scope
 
@@ -63,6 +99,11 @@ Implemented in this setup:
 
 - ASP.NET Core Web API project
 - `GET /health`
+- Clean Architecture projects for Domain, Application, and Infrastructure
+- Minimal `Customer` domain model
+- EF Core `CustomerDbContext` with Npgsql provider
+- Initial Customer table migration
+- Customer model unit tests
 - `.env.example`
 - `.gitignore`
 - `.dockerignore`
@@ -72,9 +113,7 @@ Implemented in this setup:
 
 Not implemented yet:
 
-- Customer domain model
 - Customer REST endpoints
-- EF Core DbContext and migrations
 - Authentication
 - Messaging
 - Caching
