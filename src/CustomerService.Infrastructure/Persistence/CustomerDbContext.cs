@@ -7,6 +7,8 @@ public sealed class CustomerDbContext(DbContextOptions<CustomerDbContext> option
 {
     public DbSet<Customer> Customers => Set<Customer>();
 
+    public DbSet<BankingDetails> BankingDetails => Set<BankingDetails>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CustomerDbContext).Assembly);

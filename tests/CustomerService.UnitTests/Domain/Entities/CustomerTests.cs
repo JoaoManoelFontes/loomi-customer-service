@@ -12,12 +12,14 @@ public sealed class CustomerTests
         var customer = new Customer(
             "Ada Lovelace",
             "ada@example.com",
-            "123 Main Street");
+            "123 Main Street",
+            CreateBankingDetails());
 
         customer.Id.Should().NotBeEmpty();
         customer.Name.Should().Be("Ada Lovelace");
         customer.Email.Should().Be("ada@example.com");
         customer.Address.Should().Be("123 Main Street");
+        customer.BankingDetails.Should().NotBeNull();
     }
 
     [Fact]
@@ -26,7 +28,8 @@ public sealed class CustomerTests
         var customer = new Customer(
             "Ada Lovelace",
             "ada@example.com",
-            "123 Main Street");
+            "123 Main Street",
+            CreateBankingDetails());
 
         customer.ProfilePictureUrl.Should().BeNull();
     }
@@ -36,7 +39,7 @@ public sealed class CustomerTests
     [InlineData(" ")]
     public void Constructor_WithMissingName_ShouldThrowDomainValidationException(string name)
     {
-        var act = () => new Customer(name, "ada@example.com", "123 Main Street");
+        var act = () => new Customer(name, "ada@example.com", "123 Main Street", CreateBankingDetails());
 
         act.Should().Throw<DomainValidationException>()
             .WithMessage("Name is required.");
@@ -47,7 +50,7 @@ public sealed class CustomerTests
     [InlineData(" ")]
     public void Constructor_WithMissingEmail_ShouldThrowDomainValidationException(string email)
     {
-        var act = () => new Customer("Ada Lovelace", email, "123 Main Street");
+        var act = () => new Customer("Ada Lovelace", email, "123 Main Street", CreateBankingDetails());
 
         act.Should().Throw<DomainValidationException>()
             .WithMessage("Email is required.");
@@ -58,10 +61,19 @@ public sealed class CustomerTests
     [InlineData(" ")]
     public void Constructor_WithMissingAddress_ShouldThrowDomainValidationException(string address)
     {
-        var act = () => new Customer("Ada Lovelace", "ada@example.com", address);
+        var act = () => new Customer("Ada Lovelace", "ada@example.com", address, CreateBankingDetails());
 
         act.Should().Throw<DomainValidationException>()
             .WithMessage("Address is required.");
+    }
+
+    [Fact]
+    public void Constructor_WithoutBankingDetails_ShouldThrowDomainValidationException()
+    {
+        var act = () => new Customer("Ada Lovelace", "ada@example.com", "123 Main Street", null!);
+
+        act.Should().Throw<DomainValidationException>()
+            .WithMessage("Banking details are required.");
     }
 
     [Fact]
@@ -96,6 +108,7 @@ public sealed class CustomerTests
             "Ada Lovelace",
             "ada@example.com",
             "123 Main Street",
+            CreateBankingDetails(),
             "https://storage.example.com/customers/profile.png");
 
         customer.UpdateProfilePicture(" ");
@@ -126,6 +139,12 @@ public sealed class CustomerTests
         return new Customer(
             "Ada Lovelace",
             "ada@example.com",
-            "123 Main Street");
+            "123 Main Street",
+            CreateBankingDetails());
+    }
+
+    private static BankingDetails CreateBankingDetails()
+    {
+        return new BankingDetails("0001", "123456-7", 100);
     }
 }

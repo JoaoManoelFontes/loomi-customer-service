@@ -9,17 +9,30 @@ public sealed class Customer
         Name = string.Empty;
         Email = string.Empty;
         Address = string.Empty;
+        BankingDetails = null!;
     }
 
-    public Customer(string name, string email, string address, string? profilePictureUrl = null)
-        : this(Guid.NewGuid(), name, email, address, profilePictureUrl)
+    public Customer(
+        string name,
+        string email,
+        string address,
+        BankingDetails bankingDetails,
+        string? profilePictureUrl = null)
+        : this(Guid.NewGuid(), name, email, address, bankingDetails, profilePictureUrl)
     {
     }
 
-    internal Customer(Guid id, string name, string email, string address, string? profilePictureUrl = null)
+    internal Customer(
+        Guid id,
+        string name,
+        string email,
+        string address,
+        BankingDetails bankingDetails,
+        string? profilePictureUrl = null)
     {
         Id = id == Guid.Empty ? throw new DomainValidationException("Customer id is required.") : id;
         SetProfileData(name, email, address);
+        BankingDetails = bankingDetails ?? throw new DomainValidationException("Banking details are required.");
         ProfilePictureUrl = NormalizeOptional(profilePictureUrl);
     }
 
@@ -32,6 +45,8 @@ public sealed class Customer
     public string Address { get; private set; }  = null!;
 
     public string? ProfilePictureUrl { get; private set; }
+
+    public BankingDetails BankingDetails { get; private set; }
 
     public void UpdateProfile(string name, string email, string address)
     {

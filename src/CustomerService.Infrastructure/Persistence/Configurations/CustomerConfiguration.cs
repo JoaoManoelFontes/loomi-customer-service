@@ -34,5 +34,11 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(customer => customer.ProfilePictureUrl)
             .HasColumnName("profile_picture_url")
             .HasMaxLength(2048);
+
+        builder.HasOne(customer => customer.BankingDetails)
+            .WithOne()
+            .HasForeignKey<BankingDetails>(bankingDetails => bankingDetails.CustomerId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
