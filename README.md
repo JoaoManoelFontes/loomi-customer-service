@@ -1,8 +1,8 @@
 # CustomerService
 
-Initial setup for the customer-service ASP.NET Core Web API.
+Initial setup for the customer-service ASP.NET Core Web API with simple JWT authentication and role-based authorization.
 
-The service currently exposes `GET /health` and includes a Clean Architecture foundation with a minimal Customer domain model and PostgreSQL persistence through EF Core + Npgsql.
+The service exposes `GET /health`, `POST /api/v1/auth/login`, and admin-only `POST /api/v1/users`. It includes a Clean Architecture foundation with Customer and User domain models and PostgreSQL persistence through EF Core + Npgsql.
 
 ## Requirements
 
@@ -35,6 +35,14 @@ Expected response:
 
 The response also includes a UTC timestamp.
 
+Swagger is available in Development at:
+
+```text
+http://localhost:5001/swagger
+```
+
+The API applies migrations and seeds the development admin user on Development startup, so start Postgres before running the API locally.
+
 ## Docker Compose
 
 Create a local `.env` from `.env.example` if you want to override defaults, then run:
@@ -46,6 +54,7 @@ docker compose up -d --build
 Local URLs:
 
 - API: `http://localhost:5001/health`
+- Swagger: `http://localhost:5001/swagger`
 - Postgres: `localhost:5432`
 
 ## Database Migrations
@@ -75,7 +84,60 @@ dotnet ef database update \
   --context CustomerDbContext
 ```
 
-The initial migration creates the `customers` table with `id`, `name`, `email`, `address`, and `profile_picture_url`.
+The migrations create `customers`, `banking_details`, and `users`. The `users` table stores CPF, password hash, role, optional customer id, and timestamps. CPF has a unique index.
+
+## Authentication and RBAC
+
+Authentication uses CPF and password. `User` is separate from `Customer`: `User` owns credentials and access control; `Customer` owns profile and banking data.
+
+Roles:
+
+- `Admin`: can create users and access administrative endpoints.
+- `Customer`: regular authenticated customer.
+- `Service`: reserved for internal service-to-service authentication.
+
+Development/demo admin:
+
+```text
+CPF: 00000000000
+Password: Admin@123
+Role: Admin
+```
+
+This credential is for local development and the challenge demo only. Do not reuse it in production.
+
+Login:
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "cpf": "00000000000",
+  "password": "Admin@123"
+}
+```
+
+Use the returned `accessToken` as a bearer token in Swagger or HTTP clients:
+
+```text
+Authorization: Bearer <token>
+```
+
+Create a user as Admin:
+
+```http
+POST /api/v1/users
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "cpf": "12345678900",
+  "password": "Customer@123",
+  "role": "Customer",
+  "customerId": null
+}
+```
 
 ## Tests
 
@@ -91,6 +153,15 @@ The API is prepared to receive the future Postgres connection string through:
 ConnectionStrings__Postgres
 ```
 
+JWT configuration:
+
+```text
+Jwt__Issuer
+Jwt__Audience
+Jwt__Secret
+Jwt__ExpiresInMinutes
+```
+
 The development connection string points at the local Docker Compose Postgres service.
 
 ## Scope
@@ -101,9 +172,13 @@ Implemented in this setup:
 - `GET /health`
 - Clean Architecture projects for Domain, Application, and Infrastructure
 - Minimal `Customer` domain model
+- Separate `User` domain model with CPF credentials and RBAC roles
+- JWT bearer login at `POST /api/v1/auth/login`
+- Admin-only user creation at `POST /api/v1/users`
+- Swagger bearer token support
 - EF Core `CustomerDbContext` with Npgsql provider
-- Initial Customer table migration
-- Customer model unit tests
+- Customer, banking details, and user table migrations
+- Customer/User domain tests plus auth application and HTTP integration tests
 - `.env.example`
 - `.gitignore`
 - `.dockerignore`
@@ -114,6 +189,5 @@ Implemented in this setup:
 Not implemented yet:
 
 - Customer REST endpoints
-- Authentication
 - Messaging
 - Caching
