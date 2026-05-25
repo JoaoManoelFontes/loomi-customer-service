@@ -33,6 +33,19 @@ public sealed class BankingDetails
 
     public decimal Balance { get; private set; }
 
+    public void Update(string? agency, string? checkingAccountNumber)
+    {
+        if (agency is not null)
+        {
+            Agency = RequireValue(agency, nameof(Agency));
+        }
+
+        if (checkingAccountNumber is not null)
+        {
+            CheckingAccountNumber = RequireValue(checkingAccountNumber, nameof(CheckingAccountNumber));
+        }
+    }
+
     private static string RequireValue(string value, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(value))

@@ -53,6 +53,29 @@ public sealed class Customer
         SetProfileData(name, email, address);
     }
 
+    public void UpdateProfileFields(string? name, string? email, string? address)
+    {
+        if (name is not null)
+        {
+            Name = RequireValue(name, nameof(Name));
+        }
+
+        if (email is not null)
+        {
+            Email = RequireValue(email, nameof(Email));
+        }
+
+        if (address is not null)
+        {
+            Address = RequireValue(address, nameof(Address));
+        }
+    }
+
+    public void UpdateBankingDetails(string? agency, string? checkingAccountNumber)
+    {
+        BankingDetails.Update(agency, checkingAccountNumber);
+    }
+
     public void UpdateProfilePicture(string? profilePictureUrl)
     {
         ProfilePictureUrl = NormalizeOptional(profilePictureUrl);

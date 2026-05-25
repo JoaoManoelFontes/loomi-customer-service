@@ -1,4 +1,6 @@
 using Asp.Versioning;
+using CustomerService.Application.Customers.GetCustomerDetails;
+using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Application.Users.CreateUser;
 using CustomerService.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -9,8 +11,35 @@ namespace CustomerService.Api.Controllers.V1;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/customers")]
-public sealed class UsersController(CreateUserHandler createUserHandler) : ControllerBase
+public sealed class CustomerController(
+    CreateUserHandler createUserHandler,
+    GetCustomerDetailsHandler getCustomerDetailsHandler,
+    UpdateCustomerHandler updateCustomerHandler) : ControllerBase
 {
+    [HttpGet("{customerId:guid}")]
+    [ProducesResponseType(typeof(CustomerDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CustomerDetailsResponse>> GetById(
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var response = await getCustomerDetailsHandler.HandleAsync(customerId, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPatch("{customerId:guid}")]
+    [ProducesResponseType(typeof(UpdateCustomerResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UpdateCustomerResponse>> Update(
+        Guid customerId,
+        [FromBody] UpdateCustomerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await updateCustomerHandler.HandleAsync(customerId, request, cancellationToken);
+        return Ok(response);
+    }
+
     [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPost]
     [ProducesResponseType(typeof(CreateUserResponse), StatusCodes.Status201Created)]
