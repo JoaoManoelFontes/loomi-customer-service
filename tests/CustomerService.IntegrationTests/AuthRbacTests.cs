@@ -151,6 +151,107 @@ public sealed class AuthRbacTests : IAsyncLifetime
         duplicateResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
+    [Fact]
+    public async Task GetCustomer_WithAdminTokenAndRouteId_ShouldReturnRequestedCustomer()
+    {
+        var customer = await _factory.SeedCustomerAsync(name: "Cliente Admin View");
+        await _factory.SeedUserAsync("00000000000", "Admin@123", UserRole.Admin);
+        var token = await LoginAndGetTokenAsync("00000000000", "Admin@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync($"/api/v1/customers/{customer.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("id").GetGuid().Should().Be(customer.Id);
+        json.GetProperty("name").GetString().Should().Be("Cliente Admin View");
+    }
+
+    [Fact]
+    public async Task GetCustomer_WithCustomerTokenAndNoRouteId_ShouldReturnAuthenticatedCustomer()
+    {
+        var customer = await _factory.SeedCustomerAsync(name: "Cliente Logado");
+        await _factory.SeedUserAsync("12345678900", "Customer@123", UserRole.Customer, customer.Id);
+        var token = await LoginAndGetTokenAsync("12345678900", "Customer@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/v1/customers");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("id").GetGuid().Should().Be(customer.Id);
+        json.GetProperty("name").GetString().Should().Be("Cliente Logado");
+    }
+
+    [Fact]
+    public async Task GetCustomer_WithCustomerTokenAndRouteId_ShouldReturnForbidden()
+    {
+        var customer = await _factory.SeedCustomerAsync();
+        await _factory.SeedUserAsync("12345678900", "Customer@123", UserRole.Customer, customer.Id);
+        var token = await LoginAndGetTokenAsync("12345678900", "Customer@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync($"/api/v1/customers/{customer.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateCustomer_WithCustomerTokenAndNoRouteId_ShouldUpdateAuthenticatedCustomer()
+    {
+        var customer = await _factory.SeedCustomerAsync(name: "Nome Antigo");
+        await _factory.SeedUserAsync("12345678900", "Customer@123", UserRole.Customer, customer.Id);
+        var token = await LoginAndGetTokenAsync("12345678900", "Customer@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.PatchAsJsonAsync("/api/v1/customers", new
+        {
+            name = "Nome Atualizado"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("customerId").GetGuid().Should().Be(customer.Id);
+
+        var detailsResponse = await _client.GetAsync("/api/v1/customers");
+        var details = await detailsResponse.Content.ReadFromJsonAsync<JsonElement>();
+        details.GetProperty("name").GetString().Should().Be("Nome Atualizado");
+    }
+
+    [Fact]
+    public async Task UpdateCustomer_WithCustomerTokenAndRouteId_ShouldReturnForbidden()
+    {
+        var customer = await _factory.SeedCustomerAsync();
+        await _factory.SeedUserAsync("12345678900", "Customer@123", UserRole.Customer, customer.Id);
+        var token = await LoginAndGetTokenAsync("12345678900", "Customer@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.PatchAsJsonAsync($"/api/v1/customers/{customer.Id}", new
+        {
+            name = "Tentativa Bloqueada"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateCustomer_WithAdminTokenAndRouteId_ShouldUpdateRequestedCustomer()
+    {
+        var customer = await _factory.SeedCustomerAsync(name: "Nome Antigo");
+        await _factory.SeedUserAsync("00000000000", "Admin@123", UserRole.Admin);
+        var token = await LoginAndGetTokenAsync("00000000000", "Admin@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.PatchAsJsonAsync($"/api/v1/customers/{customer.Id}", new
+        {
+            name = "Nome Admin"
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        json.GetProperty("customerId").GetGuid().Should().Be(customer.Id);
+    }
+
     private async Task<string> LoginAndGetTokenAsync(string cpf, string password)
     {
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login", new { cpf, password });

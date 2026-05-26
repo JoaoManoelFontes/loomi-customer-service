@@ -16,8 +16,31 @@ public sealed class CustomerController(
     GetCustomerDetailsHandler getCustomerDetailsHandler,
     UpdateCustomerHandler updateCustomerHandler) : ControllerBase
 {
+    private const string CustomerIdClaimType = "customer_id";
+
+    [Authorize(Roles = nameof(UserRole.Customer))]
+    [HttpGet]
+    [ProducesResponseType(typeof(CustomerDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CustomerDetailsResponse>> GetCurrent(
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedCustomerId(out var customerId))
+        {
+            return Forbid();
+        }
+
+        var response = await getCustomerDetailsHandler.HandleAsync(customerId, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpGet("{customerId:guid}")]
     [ProducesResponseType(typeof(CustomerDetailsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CustomerDetailsResponse>> GetById(
         Guid customerId,
@@ -27,9 +50,32 @@ public sealed class CustomerController(
         return Ok(response);
     }
 
+    [Authorize(Roles = nameof(UserRole.Customer))]
+    [HttpPatch]
+    [ProducesResponseType(typeof(UpdateCustomerResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UpdateCustomerResponse>> UpdateCurrent(
+        [FromBody] UpdateCustomerRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedCustomerId(out var customerId))
+        {
+            return Forbid();
+        }
+
+        var response = await updateCustomerHandler.HandleAsync(customerId, request, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPatch("{customerId:guid}")]
     [ProducesResponseType(typeof(UpdateCustomerResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UpdateCustomerResponse>> Update(
         Guid customerId,
@@ -53,5 +99,11 @@ public sealed class CustomerController(
     {
         var response = await createUserHandler.HandleAsync(request, cancellationToken);
         return Created($"/api/v1/customers/{response.Customer.Id}", response);
+    }
+
+    private bool TryGetAuthenticatedCustomerId(out Guid customerId)
+    {
+        var value = User.FindFirst(CustomerIdClaimType)?.Value;
+        return Guid.TryParse(value, out customerId);
     }
 }
