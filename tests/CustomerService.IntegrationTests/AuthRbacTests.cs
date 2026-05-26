@@ -197,6 +197,49 @@ public sealed class AuthRbacTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task CustomerExists_WithAdminTokenAndExistingCustomer_ShouldReturnTrue()
+    {
+        var customer = await _factory.SeedCustomerAsync();
+        await _factory.SeedUserAsync("00000000000", "Admin@123", UserRole.Admin);
+        var token = await LoginAndGetTokenAsync("00000000000", "Admin@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync($"/api/v1/customers/{customer.Id}/exists");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var exists = await response.Content.ReadFromJsonAsync<bool>();
+        exists.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CustomerExists_WithAdminTokenAndMissingCustomer_ShouldReturnFalse()
+    {
+        await _factory.SeedUserAsync("00000000000", "Admin@123", UserRole.Admin);
+        var token = await LoginAndGetTokenAsync("00000000000", "Admin@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync($"/api/v1/customers/{Guid.NewGuid()}/exists");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var exists = await response.Content.ReadFromJsonAsync<bool>();
+        exists.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CustomerExists_WithInvalidCustomerId_ShouldReturnClientError()
+    {
+        await _factory.SeedUserAsync("00000000000", "Admin@123", UserRole.Admin);
+        var token = await LoginAndGetTokenAsync("00000000000", "Admin@123");
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _client.GetAsync("/api/v1/customers/not-a-guid/exists");
+
+        ((int)response.StatusCode).Should().BeInRange(400, 499);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().NotBe("false");
+    }
+
+    [Fact]
     public async Task UpdateCustomer_WithCustomerTokenAndNoRouteId_ShouldUpdateAuthenticatedCustomer()
     {
         var customer = await _factory.SeedCustomerAsync(name: "Nome Antigo");

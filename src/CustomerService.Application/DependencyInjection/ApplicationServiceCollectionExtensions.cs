@@ -1,4 +1,5 @@
 using CustomerService.Application.Auth.Login;
+using CustomerService.Application.Customers.Exists;
 using CustomerService.Application.Customers.GetCustomerDetails;
 using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Application.Users.CreateUser;
@@ -15,6 +16,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IValidator<CreateCustomerRequest>, CreateUserRequestValidator>();
         services.AddScoped<IValidator<UpdateCustomerRequest>, UpdateCustomerRequestValidator>();
         services.AddScoped<LoginHandler>();
+        services.AddScoped<CustomerExistsHandler>();
         services.AddScoped<GetCustomerDetailsHandler>();
         services.AddScoped<UpdateCustomerHandler>();
         services.AddScoped<CreateUserHandler>();

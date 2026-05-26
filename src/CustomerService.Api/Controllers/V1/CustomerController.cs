@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using CustomerService.Application.Customers.Exists;
 using CustomerService.Application.Customers.GetCustomerDetails;
 using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Application.Users.CreateUser;
@@ -13,6 +14,7 @@ namespace CustomerService.Api.Controllers.V1;
 [Route("api/v{version:apiVersion}/customers")]
 public sealed class CustomerController(
     CreateUserHandler createUserHandler,
+    CustomerExistsHandler customerExistsHandler,
     GetCustomerDetailsHandler getCustomerDetailsHandler,
     UpdateCustomerHandler updateCustomerHandler) : ControllerBase
 {
@@ -48,6 +50,18 @@ public sealed class CustomerController(
     {
         var response = await getCustomerDetailsHandler.HandleAsync(customerId, cancellationToken);
         return Ok(response);
+    }
+
+    [HttpGet("{customerId:guid}/exists")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<bool>> Exists(
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var exists = await customerExistsHandler.HandleAsync(customerId, cancellationToken);
+        return Ok(exists);
     }
 
     [Authorize(Roles = nameof(UserRole.Customer))]

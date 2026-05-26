@@ -14,6 +14,11 @@ internal sealed class FakeCustomerRepository(params Customer[] customers) : ICus
         return Task.FromResult(_customers.FirstOrDefault(customer => customer.Id == id));
     }
 
+    public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_customers.Any(customer => customer.Id == id));
+    }
+
     public Task UpdateAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         UpdatedCustomer = customer;

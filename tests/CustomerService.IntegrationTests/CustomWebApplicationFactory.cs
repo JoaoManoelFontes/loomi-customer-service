@@ -119,6 +119,14 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
             }
         }
 
+        public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            lock (_customers)
+            {
+                return Task.FromResult(_customers.Any(customer => customer.Id == id));
+            }
+        }
+
         public Task UpdateAsync(Customer customer, CancellationToken cancellationToken = default)
         {
             lock (_customers)
