@@ -33,6 +33,24 @@ public sealed class BankingDetails
 
     public decimal Balance { get; private set; }
 
+    public void Debit(decimal amount)
+    {
+        EnsurePositiveAmount(amount);
+
+        if (Balance < amount)
+        {
+            throw new DomainValidationException("Insufficient balance.");
+        }
+
+        Balance -= amount;
+    }
+
+    public void Credit(decimal amount)
+    {
+        EnsurePositiveAmount(amount);
+        Balance += amount;
+    }
+
     public void Update(string? agency, string? checkingAccountNumber)
     {
         if (agency is not null)
@@ -54,5 +72,13 @@ public sealed class BankingDetails
         }
 
         return value.Trim();
+    }
+
+    private static void EnsurePositiveAmount(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new DomainValidationException("Amount must be greater than zero.");
+        }
     }
 }

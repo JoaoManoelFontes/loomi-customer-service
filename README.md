@@ -1,6 +1,6 @@
 # CustomerService
 
-Initial setup for the customer-service ASP.NET Core Web API with simple JWT authentication and role-based authorization.
+Initial setup for the customer-service ASP.NET Core Web API with simple JWT authentication, role-based authorization, and Redis caching for customer existence checks.
 
 The service exposes `GET /health`, `POST /api/v1/auth/login`, and admin-only `POST /api/v1/users`. It includes a Clean Architecture foundation with Customer and User domain models and PostgreSQL persistence through EF Core + Npgsql.
 
@@ -56,6 +56,7 @@ Local URLs:
 - API: `http://localhost:5001/health`
 - Swagger: `http://localhost:5001/swagger`
 - Postgres: `localhost:5432`
+- Redis: `localhost:6379`
 
 ## Database Migrations
 
@@ -162,6 +163,17 @@ Jwt__Secret
 Jwt__ExpiresInMinutes
 ```
 
+Redis configuration:
+
+```text
+Redis__ConnectionString
+CustomerCache__ExistsTtlSeconds
+```
+
+`GET /api/v1/customers/{customerId}/exists` uses Redis as a read-through cache. The handler first checks `customer:{customerId}`. On a cache hit, it returns the cached boolean and skips PostgreSQL. On a miss, it queries PostgreSQL, stores `true` or `false` in Redis with `CustomerCache:ExistsTtlSeconds`, and returns the database result. Redis read/write failures are ignored for endpoint availability because PostgreSQL remains the source of truth.
+
+Future customer create, update, and delete flows must invalidate `customer:{customerId}` when they change whether that customer should be considered existent. The current TTL is intentionally short to reduce stale positive or negative existence results.
+
 The development connection string points at the local Docker Compose Postgres service.
 
 ## Scope
@@ -177,17 +189,18 @@ Implemented in this setup:
 - Admin-only user creation at `POST /api/v1/users`
 - Swagger bearer token support
 - EF Core `CustomerDbContext` with Npgsql provider
+- Redis-backed read-through cache for `GET /api/v1/customers/{customerId}/exists`
 - Customer, banking details, and user table migrations
 - Customer/User domain tests plus auth application and HTTP integration tests
 - `.env.example`
 - `.gitignore`
 - `.dockerignore`
 - Multi-stage API `Dockerfile`
-- `docker-compose.yml` with API and Postgres
+- `docker-compose.yml` with API, Postgres, and Redis
 - Rider-compatible solution file
 
 Not implemented yet:
 
 - Customer REST endpoints
 - Messaging
-- Caching
+- Full customer details caching

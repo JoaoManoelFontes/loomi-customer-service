@@ -9,6 +9,8 @@ internal sealed class FakeCustomerRepository(params Customer[] customers) : ICus
 
     public Customer? UpdatedCustomer { get; private set; }
 
+    public int ExistsCallCount { get; private set; }
+
     public Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_customers.FirstOrDefault(customer => customer.Id == id));
@@ -16,6 +18,7 @@ internal sealed class FakeCustomerRepository(params Customer[] customers) : ICus
 
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        ExistsCallCount++;
         return Task.FromResult(_customers.Any(customer => customer.Id == id));
     }
 

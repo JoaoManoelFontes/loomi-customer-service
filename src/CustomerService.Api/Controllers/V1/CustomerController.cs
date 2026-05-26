@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using CustomerService.Application.Customers.Exists;
 using CustomerService.Application.Customers.GetCustomerDetails;
+using CustomerService.Application.Customers.UpdateBalance;
 using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Application.Users.CreateUser;
 using CustomerService.Domain.Enums;
@@ -16,6 +17,7 @@ public sealed class CustomerController(
     CreateUserHandler createUserHandler,
     CustomerExistsHandler customerExistsHandler,
     GetCustomerDetailsHandler getCustomerDetailsHandler,
+    UpdateBalanceHandler updateBalanceHandler,
     UpdateCustomerHandler updateCustomerHandler) : ControllerBase
 {
     private const string CustomerIdClaimType = "customer_id";
@@ -97,6 +99,27 @@ public sealed class CustomerController(
         CancellationToken cancellationToken)
     {
         var response = await updateCustomerHandler.HandleAsync(customerId, request, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = nameof(UserRole.Customer))]
+    [HttpPost("update-balance")]
+    [ProducesResponseType(typeof(UpdateBalanceResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<UpdateBalanceResponse>> UpdateBalance(
+        [FromBody] UpdateBalanceRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedCustomerId(out var senderId))
+        {
+            return Forbid();
+        }
+
+        var response = await updateBalanceHandler.HandleAsync(senderId, request, cancellationToken);
         return Ok(response);
     }
 
