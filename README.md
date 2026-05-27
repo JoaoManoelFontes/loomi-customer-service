@@ -178,6 +178,12 @@ AzureBlobStorage__ContainerName
 AzureBlobStorage__UploadUrlExpiresInMinutes
 ```
 
+Application Insights is optional. Leave the connection string empty for local development or tests; the API will start without registering Azure telemetry. To send telemetry to Azure, set:
+
+```text
+ApplicationInsights__ConnectionString
+```
+
 `POST /api/v1/customers/profile-picture/upload-url` returns a temporary upload target for the authenticated customer to upload a profile image directly to Blob Storage using `PUT`. The `customerId` comes from the JWT `customer_id` claim, matching the customer self-service endpoints. The request body must include `fileName`, `contentType`, and `fileSizeInBytes`; supported content types are `image/jpeg`, `image/png`, and `image/webp`, with a 5 MB maximum.
 
 When `AzureBlobStorage__ConnectionString` is empty, the API registers a local fallback implementation and returns `https://local.blob-storage.invalid/...` placeholder URLs. This keeps local development and tests working until real Azure credentials are available. Configure a real Azure Storage connection string and container name to generate actual Blob SAS upload URLs.

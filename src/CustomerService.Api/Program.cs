@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddOptionalApplicationInsights(builder.Configuration);
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

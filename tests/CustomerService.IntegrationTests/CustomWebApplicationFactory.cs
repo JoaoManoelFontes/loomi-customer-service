@@ -2,6 +2,7 @@ using CustomerService.Application.Abstractions;
 using CustomerService.Application.Common;
 using CustomerService.Domain.Entities;
 using CustomerService.Domain.Enums;
+using CustomerService.Infrastructure.Storage;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -27,7 +28,11 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
                 ["Jwt:Issuer"] = "CustomerService",
                 ["Jwt:Audience"] = "BankingSystem",
                 ["Jwt:Secret"] = "change-this-development-secret-at-least-32-chars",
-                ["Jwt:ExpiresInMinutes"] = "60"
+                ["Jwt:ExpiresInMinutes"] = "60",
+                ["AzureBlobStorage:ConnectionString"] = "",
+                ["AzureBlobStorage:ContainerName"] = "customer-profile-pictures",
+                ["AzureBlobStorage:UploadUrlExpiresInMinutes"] = "10",
+                ["ApplicationInsights:ConnectionString"] = ""
             });
         });
 
@@ -36,9 +41,15 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
             services.RemoveAll<IUserRepository>();
             services.RemoveAll<ICustomerRepository>();
             services.RemoveAll<ICustomerBalanceTransferRepository>();
+            services.RemoveAll<IProfilePictureStorageService>();
             services.AddSingleton<IUserRepository>(_users);
             services.AddSingleton<ICustomerRepository>(_customers);
             services.AddSingleton<ICustomerBalanceTransferRepository>(_customers);
+            services.AddSingleton(Microsoft.Extensions.Options.Options.Create(new AzureBlobStorageOptions
+            {
+                UploadUrlExpiresInMinutes = 10
+            }));
+            services.AddSingleton<IProfilePictureStorageService, LocalProfilePictureStorageService>();
         });
     }
 
