@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using CustomerService.Application.Customers.Exists;
 using CustomerService.Application.Customers.GetCustomerDetails;
+using CustomerService.Application.Customers.ProfilePictureUploadUrl;
 using CustomerService.Application.Customers.UpdateBalance;
 using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Application.Users.CreateUser;
@@ -17,6 +18,7 @@ public sealed class CustomerController(
     CreateUserHandler createUserHandler,
     CustomerExistsHandler customerExistsHandler,
     GetCustomerDetailsHandler getCustomerDetailsHandler,
+    CreateProfilePictureUploadUrlHandler createProfilePictureUploadUrlHandler,
     UpdateBalanceHandler updateBalanceHandler,
     UpdateCustomerHandler updateCustomerHandler) : ControllerBase
 {
@@ -99,6 +101,30 @@ public sealed class CustomerController(
         CancellationToken cancellationToken)
     {
         var response = await updateCustomerHandler.HandleAsync(customerId, request, cancellationToken);
+        return Ok(response);
+    }
+
+    [Authorize(Roles = nameof(UserRole.Customer))]
+    [HttpPost("profile-picture/upload-url")]
+    [ProducesResponseType(typeof(CreateProfilePictureUploadUrlResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<CreateProfilePictureUploadUrlResponse>> CreateProfilePictureUploadUrl(
+        [FromBody] CreateProfilePictureUploadUrlRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetAuthenticatedCustomerId(out var customerId))
+        {
+            return Forbid();
+        }
+
+        var response = await createProfilePictureUploadUrlHandler.HandleAsync(
+            customerId,
+            request,
+            cancellationToken);
+
         return Ok(response);
     }
 

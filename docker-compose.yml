@@ -1,18 +1,18 @@
 services:
-#  customer-api:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: customer-api
-#    env_file:
-#      - .env
-#    ports:
-#      - "${CUSTOMER_API_HTTP_PORT:-5001}:8080"
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      redis:
-#        condition: service_started
+  customer-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: customer-api
+    env_file:
+      - .env
+    ports:
+      - "${CUSTOMER_API_HTTP_PORT:-5001}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   postgres:
     image: postgres:16-alpine

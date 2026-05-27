@@ -1,8 +1,8 @@
 # CustomerService
 
-Initial setup for the customer-service ASP.NET Core Web API with simple JWT authentication, role-based authorization, and Redis caching for customer existence checks.
+Initial setup for the customer-service ASP.NET Core Web API with simple JWT authentication, role-based authorization, Redis caching for customer existence checks, and Azure Blob Storage upload URL generation for customer profile pictures.
 
-The service exposes `GET /health`, `POST /api/v1/auth/login`, and admin-only `POST /api/v1/users`. It includes a Clean Architecture foundation with Customer and User domain models and PostgreSQL persistence through EF Core + Npgsql.
+The service exposes `GET /health`, `POST /api/v1/auth/login`, admin-only customer/user operations, and `POST /api/v1/customers/profile-picture/upload-url` for authenticated customers. It includes a Clean Architecture foundation with Customer and User domain models and PostgreSQL persistence through EF Core + Npgsql.
 
 ## Requirements
 
@@ -170,6 +170,18 @@ Redis__ConnectionString
 CustomerCache__ExistsTtlSeconds
 ```
 
+Azure Blob Storage configuration:
+
+```text
+AzureBlobStorage__ConnectionString
+AzureBlobStorage__ContainerName
+AzureBlobStorage__UploadUrlExpiresInMinutes
+```
+
+`POST /api/v1/customers/profile-picture/upload-url` returns a temporary upload target for the authenticated customer to upload a profile image directly to Blob Storage using `PUT`. The `customerId` comes from the JWT `customer_id` claim, matching the customer self-service endpoints. The request body must include `fileName`, `contentType`, and `fileSizeInBytes`; supported content types are `image/jpeg`, `image/png`, and `image/webp`, with a 5 MB maximum.
+
+When `AzureBlobStorage__ConnectionString` is empty, the API registers a local fallback implementation and returns `https://local.blob-storage.invalid/...` placeholder URLs. This keeps local development and tests working until real Azure credentials are available. Configure a real Azure Storage connection string and container name to generate actual Blob SAS upload URLs.
+
 `GET /api/v1/customers/{customerId}/exists` uses Redis as a read-through cache. The handler first checks `customer:{customerId}`. On a cache hit, it returns the cached boolean and skips PostgreSQL. On a miss, it queries PostgreSQL, stores `true` or `false` in Redis with `CustomerCache:ExistsTtlSeconds`, and returns the database result. Redis read/write failures are ignored for endpoint availability because PostgreSQL remains the source of truth.
 
 Future customer create, update, and delete flows must invalidate `customer:{customerId}` when they change whether that customer should be considered existent. The current TTL is intentionally short to reduce stale positive or negative existence results.
@@ -190,6 +202,8 @@ Implemented in this setup:
 - Swagger bearer token support
 - EF Core `CustomerDbContext` with Npgsql provider
 - Redis-backed read-through cache for `GET /api/v1/customers/{customerId}/exists`
+- Azure Blob Storage abstraction with local fallback for profile picture upload URLs
+- Customer endpoint for profile picture upload URL generation using the JWT customer claim
 - Customer, banking details, and user table migrations
 - Customer/User domain tests plus auth application and HTTP integration tests
 - `.env.example`

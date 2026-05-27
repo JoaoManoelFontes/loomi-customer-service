@@ -4,6 +4,8 @@ using CustomerService.Infrastructure.Authentication;
 using CustomerService.Infrastructure.Caching;
 using CustomerService.Infrastructure.Persistence;
 using CustomerService.Infrastructure.Persistence.Repositories;
+using CustomerService.Infrastructure.Storage;
+using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +47,22 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ICustomerBalanceTransferRepository, CustomerBalanceTransferRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
+        var storageOptions = configuration.GetSection(AzureBlobStorageOptions.SectionName)
+            .Get<AzureBlobStorageOptions>() ?? new AzureBlobStorageOptions();
+        services.AddSingleton(Microsoft.Extensions.Options.Options.Create(storageOptions));
+        if (string.IsNullOrWhiteSpace(storageOptions.ConnectionString))
+        {
+            services.AddSingleton<IProfilePictureStorageService, LocalProfilePictureStorageService>();
+        }
+        else
+        {
+            services.AddSingleton(_ => new BlobContainerClient(
+                storageOptions.ConnectionString,
+                storageOptions.ContainerName));
+            services.AddSingleton<IProfilePictureStorageService, AzureBlobProfilePictureStorageService>();
+        }
+
         services.AddSingleton(configuration.GetSection(CustomerExistenceCacheOptions.SectionName)
             .Get<CustomerExistenceCacheOptions>() ?? new CustomerExistenceCacheOptions());
 
@@ -55,7 +73,13 @@ public static class InfrastructureServiceCollectionExtensions
         }
         else
         {
-            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
+            services.AddSingleton<IConnectionMultiplexer>(_ =>
+            {
+                var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+                redisOptions.AbortOnConnectFail = false;
+
+                return ConnectionMultiplexer.Connect(redisOptions);
+            });
             services.AddSingleton<ICustomerExistenceCache, RedisCustomerExistenceCache>();
         }
 

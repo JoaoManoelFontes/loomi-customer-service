@@ -1,6 +1,7 @@
 using CustomerService.Application.Auth.Login;
 using CustomerService.Application.Customers.Exists;
 using CustomerService.Application.Customers.GetCustomerDetails;
+using CustomerService.Application.Customers.ProfilePictureUploadUrl;
 using CustomerService.Application.Customers.UpdateBalance;
 using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Application.Users.CreateUser;
@@ -17,9 +18,11 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IValidator<CreateCustomerRequest>, CreateUserRequestValidator>();
         services.AddScoped<IValidator<UpdateCustomerRequest>, UpdateCustomerRequestValidator>();
         services.AddScoped<IValidator<UpdateBalanceRequest>, UpdateBalanceRequestValidator>();
+        services.AddScoped<IValidator<CreateProfilePictureUploadUrlRequest>, CreateProfilePictureUploadUrlRequestValidator>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<CustomerExistsHandler>();
         services.AddScoped<GetCustomerDetailsHandler>();
+        services.AddScoped<CreateProfilePictureUploadUrlHandler>();
         services.AddScoped<UpdateCustomerHandler>();
         services.AddScoped<UpdateBalanceHandler>();
         services.AddScoped<CreateUserHandler>();

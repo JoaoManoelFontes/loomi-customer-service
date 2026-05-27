@@ -7,7 +7,7 @@ namespace CustomerService.IntegrationTests;
 public sealed class SwaggerTests
 {
     [Fact]
-    public void SwaggerV1_ShouldIncludeCustomerExistsEndpoint()
+    public void SwaggerV1_ShouldIncludeCustomerEndpoints()
     {
         using var factory = new CustomWebApplicationFactory();
         using var client = factory.CreateClient();
@@ -16,5 +16,6 @@ public sealed class SwaggerTests
         var document = swaggerProvider.GetSwagger("v1");
 
         document.Paths.Should().ContainKey("/api/v1/customers/{customerId}/exists");
+        document.Paths.Should().ContainKey("/api/v1/customers/profile-picture/upload-url");
     }
 }

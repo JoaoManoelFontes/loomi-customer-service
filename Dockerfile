@@ -2,6 +2,10 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY ["src/CustomerService.Api/CustomerService.Api.csproj", "src/CustomerService.Api/"]
+COPY ["src/CustomerService.Application/CustomerService.Application.csproj", "src/CustomerService.Application/"]
+COPY ["src/CustomerService.Domain/CustomerService.Domain.csproj", "src/CustomerService.Domain/"]
+COPY ["src/CustomerService.Infrastructure/CustomerService.Infrastructure.csproj", "src/CustomerService.Infrastructure/"]
+
 RUN dotnet restore "src/CustomerService.Api/CustomerService.Api.csproj"
 
 COPY . .
