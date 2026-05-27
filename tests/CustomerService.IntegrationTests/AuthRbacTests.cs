@@ -78,7 +78,8 @@ public sealed class AuthRbacTests : IAsyncLifetime
             email = "maria.silva@example.com",
             address = "Rua A, 123",
             agency = "0001",
-            checkingAccountNumber = "123456-7"
+            checkingAccountNumber = "123456-7",
+            balance = 250.75m
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -100,7 +101,8 @@ public sealed class AuthRbacTests : IAsyncLifetime
             email = "maria.silva@example.com",
             address = "Rua A, 123",
             agency = "0001",
-            checkingAccountNumber = "123456-7"
+            checkingAccountNumber = "123456-7",
+            balance = 250.75m
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -122,7 +124,8 @@ public sealed class AuthRbacTests : IAsyncLifetime
             email = "maria.silva@example.com",
             address = "Rua A, 123",
             agency = "0001",
-            checkingAccountNumber = "123456-7"
+            checkingAccountNumber = "123456-7",
+            balance = 250.75m
         });
 
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -134,6 +137,7 @@ public sealed class AuthRbacTests : IAsyncLifetime
         json.GetProperty("customer").GetProperty("address").GetString().Should().Be("Rua A, 123");
         json.GetProperty("customer").GetProperty("agency").GetString().Should().Be("0001");
         json.GetProperty("customer").GetProperty("checkingAccountNumber").GetString().Should().Be("123456-7");
+        json.GetProperty("customer").GetProperty("balance").GetDecimal().Should().Be(250.75m);
         json.TryGetProperty("passwordHash", out _).Should().BeFalse();
 
         var duplicateResponse = await _client.PostAsJsonAsync("/api/v1/customers", new
@@ -249,7 +253,8 @@ public sealed class AuthRbacTests : IAsyncLifetime
 
         var response = await _client.PatchAsJsonAsync("/api/v1/customers", new
         {
-            name = "Nome Atualizado"
+            name = "Nome Atualizado",
+            profileImageUrl = "https://storage.example.com/customers/profile.png"
         });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -259,6 +264,7 @@ public sealed class AuthRbacTests : IAsyncLifetime
         var detailsResponse = await _client.GetAsync("/api/v1/customers");
         var details = await detailsResponse.Content.ReadFromJsonAsync<JsonElement>();
         details.GetProperty("name").GetString().Should().Be("Nome Atualizado");
+        details.GetProperty("profilePictureUrl").GetString().Should().Be("https://storage.example.com/customers/profile.png");
     }
 
     [Fact]

@@ -8,4 +8,5 @@ public sealed record CreateCustomerRequest(
     string Email,
     string Address,
     string Agency,
-    string CheckingAccountNumber);
+    string CheckingAccountNumber,
+    decimal Balance);

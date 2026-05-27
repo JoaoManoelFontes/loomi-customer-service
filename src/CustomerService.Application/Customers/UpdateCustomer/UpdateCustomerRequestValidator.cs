@@ -32,6 +32,15 @@ public sealed class UpdateCustomerRequestValidator : AbstractValidator<UpdateCus
                 .MaximumLength(500);
         });
 
+        When(request => request.ProfileImageUrl is not null, () =>
+        {
+            RuleFor(request => request.ProfileImageUrl)
+                .NotEmpty()
+                .MaximumLength(2048)
+                .Must(BeAbsoluteUrl)
+                .WithMessage("ProfileImageUrl must be an absolute URL.");
+        });
+
         When(request => request.BankingDetails?.Agency is not null, () =>
         {
             RuleFor(request => request.BankingDetails!.Agency)
@@ -52,7 +61,14 @@ public sealed class UpdateCustomerRequestValidator : AbstractValidator<UpdateCus
         return request.Name is not null
             || request.Email is not null
             || request.Address is not null
+            || request.ProfileImageUrl is not null
             || request.BankingDetails?.Agency is not null
             || request.BankingDetails?.CheckingAccountNumber is not null;
+    }
+
+    private static bool BeAbsoluteUrl(string? value)
+    {
+        return Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 }

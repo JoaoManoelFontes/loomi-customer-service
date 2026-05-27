@@ -46,5 +46,8 @@ public sealed class CreateUserRequestValidator : AbstractValidator<CreateCustome
         RuleFor(request => request.CheckingAccountNumber)
             .NotEmpty()
             .MaximumLength(30);
+
+        RuleFor(request => request.Balance)
+            .GreaterThanOrEqualTo(0);
     }
 }

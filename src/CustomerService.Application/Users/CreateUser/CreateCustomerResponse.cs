@@ -6,5 +6,6 @@ public sealed record CreateCustomerResponse(
     string Email,
     string Address,
     string Agency,
-    string CheckingAccountNumber
+    string CheckingAccountNumber,
+    decimal Balance
     );
