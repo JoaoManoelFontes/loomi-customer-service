@@ -27,6 +27,8 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Ex
             InvalidCredentialsException => CreateProblem(context, StatusCodes.Status401Unauthorized, "Invalid credentials", exception.Message),
             DuplicateCpfException => CreateProblem(context, StatusCodes.Status409Conflict, "Duplicate CPF", exception.Message),
             CustomerNotFoundException => CreateProblem(context, StatusCodes.Status404NotFound, "Customer not found", exception.Message),
+            InsufficientBalanceException => CreateProblem(context, StatusCodes.Status409Conflict, "Insufficient balance", exception.Message),
+            InvalidBalanceTransferException => CreateProblem(context, StatusCodes.Status400BadRequest, "Invalid balance transfer", exception.Message),
             DomainValidationException => CreateProblem(context, StatusCodes.Status400BadRequest, "Invalid request", exception.Message),
             _ => CreateProblem(context, StatusCodes.Status500InternalServerError, "Unexpected error", "An unexpected error occurred.")
         };

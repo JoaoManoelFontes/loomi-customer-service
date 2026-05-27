@@ -23,7 +23,8 @@ public sealed class CreateUserHandlerTests
             "maria.silva@example.com",
             "Rua A, 123",
             "0001",
-            "123456-7"));
+            "123456-7",
+            250.75m));
 
         response.Id.Should().NotBeEmpty();
         response.Cpf.Should().Be("12345678900");
@@ -35,6 +36,7 @@ public sealed class CreateUserHandlerTests
         response.Customer.Address.Should().Be("Rua A, 123");
         response.Customer.Agency.Should().Be("0001");
         response.Customer.CheckingAccountNumber.Should().Be("123456-7");
+        response.Customer.Balance.Should().Be(250.75m);
         repository.AddedUser.Should().NotBeNull();
         repository.AddedUser!.PasswordHash.Should().Be("hashed:Customer@123");
         repository.AddedUser.CustomerId.Should().Be(response.Customer.Id);
@@ -45,7 +47,7 @@ public sealed class CreateUserHandlerTests
         repository.AddedCustomer.Address.Should().Be("Rua A, 123");
         repository.AddedCustomer.BankingDetails.Agency.Should().Be("0001");
         repository.AddedCustomer.BankingDetails.CheckingAccountNumber.Should().Be("123456-7");
-        repository.AddedCustomer.BankingDetails.Balance.Should().Be(0);
+        repository.AddedCustomer.BankingDetails.Balance.Should().Be(250.75m);
     }
 
     [Fact]
@@ -65,21 +67,23 @@ public sealed class CreateUserHandlerTests
             "maria.silva@example.com",
             "Rua A, 123",
             "0001",
-            "123456-7"));
+            "123456-7",
+            0));
 
         await act.Should().ThrowAsync<DuplicateCpfException>();
     }
 
     [Theory]
-    [InlineData("", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7")]
-    [InlineData("123", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7")]
-    [InlineData("12345678900", "short", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7")]
-    [InlineData("12345678900", "Customer@123", "Unknown", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7")]
-    [InlineData("12345678900", "Customer@123", "Customer", "", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7")]
-    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "invalid-email", "Rua A, 123", "0001", "123456-7")]
-    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "", "0001", "123456-7")]
-    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "", "123456-7")]
-    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "")]
+    [InlineData("", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7", 0)]
+    [InlineData("123", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7", 0)]
+    [InlineData("12345678900", "short", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7", 0)]
+    [InlineData("12345678900", "Customer@123", "Unknown", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7", 0)]
+    [InlineData("12345678900", "Customer@123", "Customer", "", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7", 0)]
+    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "invalid-email", "Rua A, 123", "0001", "123456-7", 0)]
+    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "", "0001", "123456-7", 0)]
+    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "", "123456-7", 0)]
+    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "", 0)]
+    [InlineData("12345678900", "Customer@123", "Customer", "Maria Silva", "maria.silva@example.com", "Rua A, 123", "0001", "123456-7", -1)]
     public async Task HandleAsync_WithInvalidData_ShouldThrowValidationException(
         string cpf,
         string password,
@@ -88,7 +92,8 @@ public sealed class CreateUserHandlerTests
         string email,
         string address,
         string agency,
-        string checkingAccountNumber)
+        string checkingAccountNumber,
+        decimal balance)
     {
         var repository = new FakeUserRepository();
         var handler = new CreateUserHandler(repository, new FakePasswordHasher(), new CreateUserRequestValidator());
@@ -101,7 +106,8 @@ public sealed class CreateUserHandlerTests
             email,
             address,
             agency,
-            checkingAccountNumber));
+            checkingAccountNumber,
+            balance));
 
         await act.Should().ThrowAsync<FluentValidation.ValidationException>();
         repository.AddedUser.Should().BeNull();

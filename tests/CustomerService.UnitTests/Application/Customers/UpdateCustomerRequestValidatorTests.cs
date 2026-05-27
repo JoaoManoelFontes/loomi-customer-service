@@ -32,6 +32,19 @@ public sealed class UpdateCustomerRequestValidatorTests
     }
 
     [Fact]
+    public void Validate_WithProfileImageUrl_ShouldBeValid()
+    {
+        var result = _validator.Validate(new UpdateCustomerRequest(
+            Name: null,
+            Email: null,
+            Address: null,
+            BankingDetails: null,
+            ProfileImageUrl: "https://storage.example.com/customers/profile.png"));
+
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
     public void Validate_WithoutSupportedFields_ShouldBeInvalid()
     {
         var result = _validator.Validate(new UpdateCustomerRequest(
@@ -62,6 +75,22 @@ public sealed class UpdateCustomerRequestValidatorTests
             email,
             address,
             new UpdateBankingDetailsRequest(agency, checkingAccountNumber)));
+
+        result.IsValid.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-a-url")]
+    [InlineData("ftp://storage.example.com/customers/profile.png")]
+    public void Validate_WithInvalidProfileImageUrl_ShouldBeInvalid(string profileImageUrl)
+    {
+        var result = _validator.Validate(new UpdateCustomerRequest(
+            Name: null,
+            Email: null,
+            Address: null,
+            BankingDetails: null,
+            ProfileImageUrl: profileImageUrl));
 
         result.IsValid.Should().BeFalse();
     }

@@ -1,10 +1,13 @@
 using CustomerService.Application.Abstractions;
+using CustomerService.Application.Customers.Exists;
 using CustomerService.Infrastructure.Authentication;
+using CustomerService.Infrastructure.Caching;
 using CustomerService.Infrastructure.Persistence;
 using CustomerService.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace CustomerService.Infrastructure.DependencyInjection;
 
@@ -39,8 +42,22 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ICustomerBalanceTransferRepository, CustomerBalanceTransferRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton(configuration.GetSection(CustomerExistenceCacheOptions.SectionName)
+            .Get<CustomerExistenceCacheOptions>() ?? new CustomerExistenceCacheOptions());
+
+        var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"];
+        if (string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddSingleton<ICustomerExistenceCache, NoOpCustomerExistenceCache>();
+        }
+        else
+        {
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnectionString));
+            services.AddSingleton<ICustomerExistenceCache, RedisCustomerExistenceCache>();
+        }
 
         return services;
     }

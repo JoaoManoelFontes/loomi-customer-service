@@ -4,4 +4,5 @@ public sealed record UpdateCustomerRequest(
     string? Name,
     string? Email,
     string? Address,
-    UpdateBankingDetailsRequest? BankingDetails);
+    UpdateBankingDetailsRequest? BankingDetails,
+    string? ProfileImageUrl = null);

@@ -35,8 +35,10 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
         {
             services.RemoveAll<IUserRepository>();
             services.RemoveAll<ICustomerRepository>();
+            services.RemoveAll<ICustomerBalanceTransferRepository>();
             services.AddSingleton<IUserRepository>(_users);
             services.AddSingleton<ICustomerRepository>(_customers);
+            services.AddSingleton<ICustomerBalanceTransferRepository>(_customers);
         });
     }
 
@@ -64,6 +66,11 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
 
         await _customers.AddAsync(customer);
         return customer;
+    }
+
+    public Task<Customer?> GetCustomerAsync(Guid customerId)
+    {
+        return _customers.GetByIdAsync(customerId);
     }
 
     private sealed class TestUserRepository : IUserRepository
@@ -107,7 +114,7 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
         }
     }
 
-    private sealed class TestCustomerRepository : ICustomerRepository
+    private sealed class TestCustomerRepository : ICustomerRepository, ICustomerBalanceTransferRepository
     {
         private readonly List<Customer> _customers = [];
 
@@ -153,6 +160,38 @@ internal sealed class CustomWebApplicationFactory : WebApplicationFactory<Progra
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task<CustomerBalanceTransferResult> TransferAsync(
+            Guid senderId,
+            Guid receiverId,
+            decimal amount,
+            CancellationToken cancellationToken = default)
+        {
+            lock (_customers)
+            {
+                var sender = _customers.FirstOrDefault(customer => customer.Id == senderId);
+                if (sender is null)
+                {
+                    throw new CustomerService.Application.Common.Exceptions.CustomerNotFoundException(senderId);
+                }
+
+                var receiver = _customers.FirstOrDefault(customer => customer.Id == receiverId);
+                if (receiver is null)
+                {
+                    throw new CustomerService.Application.Common.Exceptions.CustomerNotFoundException(receiverId);
+                }
+
+                if (sender.BankingDetails.Balance < amount)
+                {
+                    throw new CustomerService.Application.Common.Exceptions.InsufficientBalanceException(senderId);
+                }
+
+                sender.BankingDetails.Debit(amount);
+                receiver.BankingDetails.Credit(amount);
+
+                return Task.FromResult(new CustomerBalanceTransferResult(sender, receiver, amount));
+            }
         }
     }
 }

@@ -24,7 +24,7 @@ public sealed class CreateUserHandler(
         }
 
         var role = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
-        var bankingDetails = new BankingDetails(request.Agency, request.CheckingAccountNumber, balance: 0);
+        var bankingDetails = new BankingDetails(request.Agency, request.CheckingAccountNumber, request.Balance);
         var customer = new Customer(request.Name, request.Email, request.Address, bankingDetails);
         var user = new User(cpf, passwordHasher.Hash(request.Password), role, customer.Id);
 
@@ -36,7 +36,8 @@ public sealed class CreateUserHandler(
             customer.Email,
             customer.Address,
             customer.BankingDetails.Agency,
-            customer.BankingDetails.CheckingAccountNumber
+            customer.BankingDetails.CheckingAccountNumber,
+            customer.BankingDetails.Balance
         );
 
         return new CreateUserResponse(

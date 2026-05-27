@@ -25,8 +25,29 @@ public sealed class UpdateCustomerHandlerTests
         customer.Name.Should().Be("Ana Souza");
         customer.Email.Should().Be("maria.silva@example.com");
         customer.Address.Should().Be("Rua A, 123");
+        customer.ProfilePictureUrl.Should().BeNull();
         customer.BankingDetails.Agency.Should().Be("0001");
         customer.BankingDetails.CheckingAccountNumber.Should().Be("123456-7");
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithProfileImageUrl_ShouldUpdateProfilePictureUrl()
+    {
+        var customer = CreateCustomer();
+        var repository = new FakeCustomerRepository(customer);
+        var handler = new UpdateCustomerHandler(repository, new UpdateCustomerRequestValidator());
+
+        await handler.HandleAsync(
+            customer.Id,
+            new UpdateCustomerRequest(
+                null,
+                null,
+                null,
+                null,
+                "https://storage.example.com/customers/profile.png"));
+
+        customer.ProfilePictureUrl.Should().Be("https://storage.example.com/customers/profile.png");
+        repository.UpdatedCustomer.Should().Be(customer);
     }
 
     [Fact]

@@ -19,6 +19,11 @@ public sealed class UpdateCustomerHandler(
             ?? throw new CustomerNotFoundException(customerId);
 
         customer.UpdateProfileFields(request.Name, request.Email, request.Address);
+        if (request.ProfileImageUrl is not null)
+        {
+            customer.UpdateProfilePicture(request.ProfileImageUrl);
+        }
+
         customer.UpdateBankingDetails(
             request.BankingDetails?.Agency,
             request.BankingDetails?.CheckingAccountNumber);
