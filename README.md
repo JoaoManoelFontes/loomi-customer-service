@@ -23,6 +23,11 @@ O `CustomerService` é responsável por:
 
 O saldo pertence a este serviço porque os dados bancários e o saldo fazem parte do agregado de cliente. Um futuro `transfer-service` deve coordenar transferências chamando este serviço, e não manter ou alterar saldo diretamente em uma base própria.
 
+## Acesso ao Transfer Service
+
+- [Transfer Service - Swagger](http://joaomanoelfontes-loomi-customer.eastus.cloudapp.azure.com/swagger/index.html)
+- [Transfer Service - Health Check](http://joaomanoelfontes-loomi-customer.eastus.cloudapp.azure.com/health)
+
 ## 2. Tecnologias utilizadas
 
 - .NET `net10.0`
