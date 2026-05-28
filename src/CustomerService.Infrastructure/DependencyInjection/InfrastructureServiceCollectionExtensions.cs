@@ -66,23 +66,63 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton(configuration.GetSection(CustomerExistenceCacheOptions.SectionName)
             .Get<CustomerExistenceCacheOptions>() ?? new CustomerExistenceCacheOptions());
 
-        var redisConnectionString = configuration.GetSection("Redis")["ConnectionString"];
-        if (string.IsNullOrWhiteSpace(redisConnectionString))
+        var redisOptions = GetRedisOptions(configuration);
+        if (redisOptions is null)
         {
             services.AddSingleton<ICustomerExistenceCache, NoOpCustomerExistenceCache>();
+            services.AddSingleton<ICustomerDetailsCache, NoOpCustomerDetailsCache>();
         }
         else
         {
             services.AddSingleton<IConnectionMultiplexer>(_ =>
             {
-                var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
                 redisOptions.AbortOnConnectFail = false;
 
                 return ConnectionMultiplexer.Connect(redisOptions);
             });
             services.AddSingleton<ICustomerExistenceCache, RedisCustomerExistenceCache>();
+            services.AddSingleton<ICustomerDetailsCache, RedisCustomerDetailsCache>();
         }
 
         return services;
+    }
+
+    private static ConfigurationOptions? GetRedisOptions(IConfiguration configuration)
+    {
+        var redisSection = configuration.GetSection("Redis");
+        var host = redisSection["Host"] ?? configuration["REDIS_HOST"];
+        var portValue = redisSection["Port"] ?? configuration["REDIS_PORT"];
+        if (!string.IsNullOrWhiteSpace(host) && int.TryParse(portValue, out var port))
+        {
+            var options = new ConfigurationOptions
+            {
+                Ssl = GetRedisSsl(configuration, port)
+            };
+            options.EndPoints.Add(host, port);
+
+            var password = redisSection["Password"] ?? configuration["REDIS_PASSWORD"];
+            if (!string.IsNullOrWhiteSpace(password))
+            {
+                options.Password = password;
+            }
+
+            return options;
+        }
+
+        var connectionString = redisSection["ConnectionString"];
+        return string.IsNullOrWhiteSpace(connectionString)
+            ? null
+            : ConfigurationOptions.Parse(connectionString);
+    }
+
+    private static bool GetRedisSsl(IConfiguration configuration, int port)
+    {
+        var configuredValue = configuration.GetSection("Redis")["Ssl"] ?? configuration["REDIS_SSL"];
+        if (bool.TryParse(configuredValue, out var ssl))
+        {
+            return ssl;
+        }
+
+        return port == 6380;
     }
 }

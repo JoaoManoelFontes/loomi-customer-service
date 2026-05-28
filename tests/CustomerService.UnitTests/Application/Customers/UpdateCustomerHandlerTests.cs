@@ -1,3 +1,4 @@
+using CustomerService.Application.Customers.Exists;
 using CustomerService.Application.Common.Exceptions;
 using CustomerService.Application.Customers.UpdateCustomer;
 using CustomerService.Domain.Entities;
@@ -13,7 +14,7 @@ public sealed class UpdateCustomerHandlerTests
     {
         var customer = CreateCustomer();
         var repository = new FakeCustomerRepository(customer);
-        var handler = new UpdateCustomerHandler(repository, new UpdateCustomerRequestValidator());
+        var handler = CreateHandler(repository);
 
         var response = await handler.HandleAsync(
             customer.Id,
@@ -35,7 +36,7 @@ public sealed class UpdateCustomerHandlerTests
     {
         var customer = CreateCustomer();
         var repository = new FakeCustomerRepository(customer);
-        var handler = new UpdateCustomerHandler(repository, new UpdateCustomerRequestValidator());
+        var handler = CreateHandler(repository);
 
         await handler.HandleAsync(
             customer.Id,
@@ -55,7 +56,7 @@ public sealed class UpdateCustomerHandlerTests
     {
         var customer = CreateCustomer();
         var repository = new FakeCustomerRepository(customer);
-        var handler = new UpdateCustomerHandler(repository, new UpdateCustomerRequestValidator());
+        var handler = CreateHandler(repository);
 
         await handler.HandleAsync(
             customer.Id,
@@ -76,7 +77,7 @@ public sealed class UpdateCustomerHandlerTests
     {
         var customer = CreateCustomer();
         var repository = new FakeCustomerRepository(customer);
-        var handler = new UpdateCustomerHandler(repository, new UpdateCustomerRequestValidator());
+        var handler = CreateHandler(repository);
 
         var act = () => handler.HandleAsync(
             customer.Id,
@@ -91,7 +92,7 @@ public sealed class UpdateCustomerHandlerTests
     {
         var customerId = Guid.NewGuid();
         var repository = new FakeCustomerRepository();
-        var handler = new UpdateCustomerHandler(repository, new UpdateCustomerRequestValidator());
+        var handler = CreateHandler(repository);
 
         var act = () => handler.HandleAsync(
             customerId,
@@ -102,6 +103,42 @@ public sealed class UpdateCustomerHandlerTests
         repository.UpdatedCustomer.Should().BeNull();
     }
 
+    [Fact]
+    public async Task HandleAsync_WhenUpdateSucceeds_ShouldRefreshCustomerDetailsCache()
+    {
+        var customer = CreateCustomer();
+        var repository = new FakeCustomerRepository(customer);
+        var cache = new FakeCustomerDetailsCache();
+        var handler = CreateHandler(repository, cache);
+
+        await handler.HandleAsync(
+            customer.Id,
+            new UpdateCustomerRequest("Ana Souza", null, null, null));
+
+        cache.WrittenCustomerId.Should().Be(customer.Id);
+        cache.WrittenValue.Should().NotBeNull();
+        cache.WrittenValue!.Name.Should().Be("Ana Souza");
+        cache.WrittenValue.BankingDetails.Balance.Should().Be(150.25m);
+        cache.WrittenExpiration.Should().Be(TimeSpan.FromSeconds(123));
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenCacheRefreshFails_ShouldReturnSuccessfulResponse()
+    {
+        var customer = CreateCustomer();
+        var repository = new FakeCustomerRepository(customer);
+        var cache = new FakeCustomerDetailsCache { ThrowOnSet = true };
+        var handler = CreateHandler(repository, cache);
+
+        var response = await handler.HandleAsync(
+            customer.Id,
+            new UpdateCustomerRequest("Ana Souza", null, null, null));
+
+        response.CustomerId.Should().Be(customer.Id);
+        response.Status.Should().Be("updated");
+        repository.UpdatedCustomer.Should().Be(customer);
+    }
+
     private static Customer CreateCustomer()
     {
         return new Customer(
@@ -109,5 +146,16 @@ public sealed class UpdateCustomerHandlerTests
             "maria.silva@example.com",
             "Rua A, 123",
             new BankingDetails("0001", "123456-7", 150.25m));
+    }
+
+    private static UpdateCustomerHandler CreateHandler(
+        FakeCustomerRepository repository,
+        FakeCustomerDetailsCache? cache = null)
+    {
+        return new UpdateCustomerHandler(
+            repository,
+            cache ?? new FakeCustomerDetailsCache(),
+            new CustomerExistenceCacheOptions { DetailsTtlSeconds = 123 },
+            new UpdateCustomerRequestValidator());
     }
 }

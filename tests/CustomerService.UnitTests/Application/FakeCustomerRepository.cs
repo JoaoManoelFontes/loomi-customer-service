@@ -9,10 +9,13 @@ internal sealed class FakeCustomerRepository(params Customer[] customers) : ICus
 
     public Customer? UpdatedCustomer { get; private set; }
 
+    public int GetByIdCallCount { get; private set; }
+
     public int ExistsCallCount { get; private set; }
 
     public Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        GetByIdCallCount++;
         return Task.FromResult(_customers.FirstOrDefault(customer => customer.Id == id));
     }
 

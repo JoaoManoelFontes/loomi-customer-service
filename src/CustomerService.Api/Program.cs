@@ -9,6 +9,8 @@ using CustomerService.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
+DotEnv.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
@@ -92,3 +94,51 @@ app.MapControllers();
 app.Run();
 
 public partial class Program;
+
+internal static class DotEnv
+{
+    public static void Load()
+    {
+        var envPath = FindEnvFile();
+        if (envPath is null)
+        {
+            return;
+        }
+
+        foreach (var line in File.ReadAllLines(envPath))
+        {
+            var trimmedLine = line.Trim();
+            if (trimmedLine.Length == 0 || trimmedLine.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var separatorIndex = trimmedLine.IndexOf('=');
+            if (separatorIndex <= 0)
+            {
+                continue;
+            }
+
+            var key = trimmedLine[..separatorIndex].Trim();
+            var value = trimmedLine[(separatorIndex + 1)..].Trim().Trim('"');
+            Environment.SetEnvironmentVariable(key, value);
+        }
+    }
+
+    private static string? FindEnvFile()
+    {
+        var directory = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (directory is not null)
+        {
+            var candidate = Path.Combine(directory.FullName, ".env");
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            directory = directory.Parent;
+        }
+
+        return null;
+    }
+}
